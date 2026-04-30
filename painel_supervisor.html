@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Supervisor — Inspeções</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue-dark:#042C53;--blue-mid:#185FA5;--blue-light:#85B7EB;--blue-bg:#E6F1FB;
+  --green-bg:#EAF3DE;--green-border:#639922;--green-text:#27500A;
+  --red-bg:#FCEBEB;--red-border:#A32D2D;--red-text:#501313;
+  --amber-bg:#FAEEDA;--amber-border:#854F0B;--amber-text:#412402;
+  --bg:#F4F4F2;--surface:#FFFFFF;--border:#D3D1C7;--text:#2C2C2A;--muted:#5F5E5A;--subtle:#888780;
+}
+body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);min-height:100vh}
+.topbar{background:var(--blue-dark);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-icon{width:34px;height:34px;border-radius:7px;background:rgba(133,183,235,.15);display:flex;align-items:center;justify-content:center}
+.topbar-icon svg{width:18px;height:18px;fill:var(--blue-light)}
+.topbar h1{font-size:15px;font-weight:600;color:#fff}
+.topbar p{font-size:11px;color:var(--blue-light)}
+.badge-live{background:rgba(29,158,117,.2);color:#5DCAA5;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;border:1px solid rgba(29,158,117,.3)}
+.main{padding:24px;max-width:1200px;margin:0 auto}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.kpi-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.kpi-val{font-size:28px;font-weight:700;color:var(--text);line-height:1}
+.kpi-sub{font-size:12px;color:var(--subtle);margin-top:4px}
+.kpi.lib .kpi-val{color:var(--green-text)}
+.kpi.blk .kpi-val{color:var(--red-text)}
+.kpi.obs .kpi-val{color:var(--amber-text)}
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar input,.toolbar select{font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;outline:none;transition:border-color .15s}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--blue-mid)}
+.toolbar input[type=text]{flex:1;min-width:180px}
+.btn-add{margin-left:auto;padding:9px 18px;background:var(--blue-dark);border:none;border-radius:8px;color:var(--blue-light);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-add:hover{opacity:.88}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead tr{background:#F8F8F6;border-bottom:1px solid var(--border)}
+th{padding:11px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--text)}
+tbody tr{border-bottom:1px solid #F1EFE8;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#FAFAF8}
+td{padding:12px 14px;font-size:13px;color:var(--text);vertical-align:middle}
+.cell-id{font-weight:700;font-size:12px;color:var(--muted);font-family:monospace}
+.cell-equip{font-weight:600;color:var(--blue-dark)}
+.cell-tele{background:var(--blue-bg);color:var(--blue-mid);font-size:12px;font-weight:700;padding:3px 8px;border-radius:5px;display:inline-block}
+.cell-mega{font-weight:600;font-family:monospace;font-size:13px}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;white-space:nowrap}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.s-lib{background:var(--green-bg);color:var(--green-text)}
+.s-lib .status-dot{background:var(--green-border)}
+.s-blk{background:var(--red-bg);color:var(--red-text)}
+.s-blk .status-dot{background:var(--red-border)}
+.s-obs{background:var(--amber-bg);color:var(--amber-text)}
+.s-obs .status-dot{background:var(--amber-border)}
+.isol-ok{color:var(--green-text);font-weight:500}
+.isol-warn{color:var(--amber-text);font-weight:500}
+.isol-bad{color:var(--red-text);font-weight:500}
+.btn-view{padding:5px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s}
+.btn-view:hover{border-color:var(--blue-mid);color:var(--blue-mid)}
+.empty{text-align:center;padding:48px 24px;color:var(--subtle)}
+.empty p{font-size:14px;margin-top:8px}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border)}
+.pag-info{font-size:12px;color:var(--muted)}
+.pag-btns{display:flex;gap:6px}
+.pag-btn{padding:5px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--muted);cursor:pointer}
+.pag-btn:hover{border-color:var(--blue-mid);color:var(--blue-mid)}
+.pag-btn.active{background:var(--blue-dark);color:var(--blue-light);border-color:var(--blue-dark)}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:16px;width:100%;max-width:520px;overflow:hidden}
+.modal-header{background:var(--blue-dark);padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-size:14px;font-weight:600;color:#fff}
+.modal-close{background:transparent;border:none;color:var(--blue-light);font-size:20px;cursor:pointer;line-height:1}
+.modal-body{padding:20px}
+.modal-row{display:flex;gap:12px;margin-bottom:10px}
+.modal-field{flex:1}
+.modal-field label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
+.modal-field p{font-size:14px;color:var(--text);font-weight:500}
+.modal-divider{height:1px;background:var(--border);margin:14px 0}
+.modal-actions{display:flex;gap:10px;padding:0 20px 20px}
+.modal-btn{flex:1;padding:11px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)}
+.modal-btn.approve{background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)}
+.modal-btn.block{background:var(--red-bg);border-color:var(--red-border);color:var(--red-text)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-icon">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+    </div>
+    <div>
+      <h1>Painel do Supervisor</h1>
+      <p>Inspeções de Telescópio · Megagem e Isolamento</p>
+    </div>
+  </div>
+  <span class="badge-live">● Ao vivo</span>
+</div>
+
+<div class="main">
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Total de Inspeções</div>
+      <div class="kpi-val" id="kpi-total">0</div>
+      <div class="kpi-sub">registros no período</div>
+    </div>
+    <div class="kpi lib">
+      <div class="kpi-label">Liberados</div>
+      <div class="kpi-val" id="kpi-lib">0</div>
+      <div class="kpi-sub">aptos para operação</div>
+    </div>
+    <div class="kpi blk">
+      <div class="kpi-label">Bloqueados</div>
+      <div class="kpi-val" id="kpi-blk">0</div>
+      <div class="kpi-sub">requerem ação imediata</div>
+    </div>
+    <div class="kpi obs">
+      <div class="kpi-label">Em Observação</div>
+      <div class="kpi-val" id="kpi-obs">0</div>
+      <div class="kpi-sub">monitoramento necessário</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Buscar por técnico, equipamento..." oninput="renderTable()">
+    <select id="fil-equip" onchange="renderTable()">
+      <option value="">Todos equipamentos</option>
+      <option>1173</option><option>1272</option><option>1372</option><option>1473</option>
+    </select>
+    <select id="fil-tele" onchange="renderTable()">
+      <option value="">Todos telescópios</option>
+      <option>T-01</option><option>T-02</option><option>T-03</option>
+    </select>
+    <select id="fil-parecer" onchange="renderTable()">
+      <option value="">Todos pareceres</option>
+      <option value="lib">Liberado</option>
+      <option value="blk">Bloqueado</option>
+      <option value="obs">Observação</option>
+    </select>
+    <button class="btn-add" onclick="addDemo()">+ Simular registro</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Equipamento</th>
+          <th>Telescópio</th>
+          <th class="sortable" onclick="sortBy('data')">Data ↕</th>
+          <th>Técnico</th>
+          <th>Megagem</th>
+          <th>Isoladores</th>
+          <th>Parecer</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pagination">
+      <span class="pag-info" id="pag-info">0 registros</span>
+      <div class="pag-btns" id="pag-btns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Detalhes da Inspeção</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal()">Fechar</button>
+      <button class="modal-btn approve" onclick="closeModal()">Confirmar liberação</button>
+      <button class="modal-btn block" onclick="closeModal()">Bloquear equipamento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TECNICOS=['Carlos Mendes','Ana Souza','Roberto Lima','Fernanda Costa','João Oliveira'];
+const ISOLADORES=['Íntegro','Com trincas','Sujo (limpeza necessária)'];
+const PARECERES=['lib','blk','obs'];
+const PARECER_LABEL={lib:'Liberado',blk:'Bloqueado',obs:'Observação'};
+const EQUIPS=['1173','1272','1372','1473'];
+const TELES=['T-01','T-02','T-03'];
+
+let dados=[], sortDir=1, page=0;
+const PER_PAGE=8;
+
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function randNum(min,max){return (Math.random()*(max-min)+min).toFixed(1)}
+function fmtDate(d){return new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})}
+
+// Seed com dados de exemplo
+for(let i=0;i<18;i++){
+  const d=new Date();d.setDate(d.getDate()-Math.floor(Math.random()*30));
+  dados.push({
+    id:1000+i,equip:rand(EQUIPS),tele:rand(TELES),
+    data:d.toISOString(),tecnico:rand(TECNICOS),
+    mega:randNum(50,900),unit:Math.random()>.3?'MΩ':'GΩ',
+    tensao:Math.random()>.5?'500V':'1000V',
+    isolador:rand(ISOLADORES),limpeza:Math.random()>.4,
+    parecer:rand(PARECERES),obs:''
+  });
+}
+
+function addDemo(){
+  const d=new Date();
+  dados.unshift({
+    id:1000+dados.length,equip:rand(EQUIPS),tele:rand(TELES),
+    data:d.toISOString(),tecnico:rand(TECNICOS),
+    mega:randNum(50,900),unit:Math.random()>.3?'MΩ':'GΩ',
+    tensao:Math.random()>.5?'500V':'1000V',
+    isolador:rand(ISOLADORES),limpeza:Math.random()>.4,
+    parecer:rand(PARECERES),obs:''
+  });
+  page=0;renderTable();
+}
+
+function sortBy(f){
+  sortDir*=-1;
+  dados.sort((a,b)=>a[f]<b[f]?-sortDir:sortDir);
+  renderTable();
+}
+
+function filtered(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const fe=document.getElementById('fil-equip').value;
+  const ft=document.getElementById('fil-tele').value;
+  const fp=document.getElementById('fil-parecer').value;
+  return dados.filter(r=>{
+    if(fe&&r.equip!==fe)return false;
+    if(ft&&r.tele!==ft)return false;
+    if(fp&&r.parecer!==fp)return false;
+    if(q&&!r.tecnico.toLowerCase().includes(q)&&!r.equip.includes(q)&&!r.tele.toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+
+function renderKpis(list){
+  document.getElementById('kpi-total').textContent=list.length;
+  document.getElementById('kpi-lib').textContent=list.filter(r=>r.parecer==='lib').length;
+  document.getElementById('kpi-blk').textContent=list.filter(r=>r.parecer==='blk').length;
+  document.getElementById('kpi-obs').textContent=list.filter(r=>r.parecer==='obs').length;
+}
+
+function isolClass(v){
+  if(v==='Íntegro')return 'isol-ok';
+  if(v==='Com trincas')return 'isol-bad';
+  return 'isol-warn';
+}
+function isolShort(v){
+  if(v==='Íntegro')return 'Íntegro';
+  if(v==='Com trincas')return 'Com trincas';
+  return 'Sujo';
+}
+
+function renderTable(){
+  const list=filtered();
+  renderKpis(list);
+  const total=list.length;
+  const pages=Math.ceil(total/PER_PAGE)||1;
+  if(page>=pages)page=0;
+  const slice=list.slice(page*PER_PAGE,(page+1)*PER_PAGE);
+  const tbody=document.getElementById('tbody');
+
+  if(!slice.length){
+    tbody.innerHTML=`<tr><td colspan="9" class="empty"><div style="font-size:28px">🔍</div><p>Nenhum registro encontrado.</p></td></tr>`;
+  } else {
+    tbody.innerHTML=slice.map(r=>{
+      const pClass={lib:'s-lib',blk:'s-blk',obs:'s-obs'}[r.parecer];
+      return `<tr>
+        <td class="cell-id">#${r.id}</td>
+        <td class="cell-equip">${r.equip}</td>
+        <td><span class="cell-tele">${r.tele}</span></td>
+        <td style="color:var(--muted);font-size:12px">${fmtDate(r.data)}</td>
+        <td>${r.tecnico}</td>
+        <td class="cell-mega">${r.mega} ${r.unit}</td>
+        <td class="${isolClass(r.isolador)}">${isolShort(r.isolador)}</td>
+        <td><span class="status ${pClass}"><span class="status-dot"></span>${PARECER_LABEL[r.parecer]}</span></td>
+        <td><button class="btn-view" onclick="openModal(${r.id})">Ver</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('pag-info').textContent=`${total} registro${total!==1?'s':''}`;
+  const pbtns=document.getElementById('pag-btns');
+  pbtns.innerHTML='';
+  for(let i=0;i<pages;i++){
+    const b=document.createElement('button');
+    b.className='pag-btn'+(i===page?' active':'');
+    b.textContent=i+1;
+    b.onclick=(()=>{const pi=i;return()=>{page=pi;renderTable()};})();
+    pbtns.appendChild(b);
+  }
+}
+
+function openModal(id){
+  const r=dados.find(x=>x.id===id);if(!r)return;
+  document.getElementById('modal-title').textContent=`Inspeção #${r.id} — Equip. ${r.equip}`;
+  const pClass={lib:'s-lib',blk:'s-blk',obs:'s-obs'}[r.parecer];
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-row">
+      <div class="modal-field"><label>Equipamento</label><p>${r.equip}</p></div>
+      <div class="modal-field"><label>Telescópio</label><p>${r.tele}</p></div>
+      <div class="modal-field"><label>Data</label><p>${fmtDate(r.data)}</p></div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Técnico</label><p>${r.tecnico}</p></div>
+      <div class="modal-field"><label>Tensão</label><p>${r.tensao||'—'}</p></div>
+    </div>
+    <div class="modal-divider"></div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Megagem lida</label><p style="font-size:18px;font-weight:700">${r.mega} ${r.unit}</p></div>
+      <div class="modal-field"><label>Isoladores</label><p class="${isolClass(r.isolador)}">${r.isolador}</p></div>
+      <div class="modal-field"><label>Limpeza</label><p>${r.limpeza?'✓ Realizada':'✗ Não realizada'}</p></div>
+    </div>
+    <div class="modal-divider"></div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Parecer técnico</label><p><span class="status ${pClass}"><span class="status-dot"></span>${PARECER_LABEL[r.parecer]}</span></p></div>
+    </div>
+    ${r.obs?`<div class="modal-row"><div class="modal-field"><label>Observações</label><p>${r.obs}</p></div></div>`:''}
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+renderTable();
+</script>
+</body>
+</html>
