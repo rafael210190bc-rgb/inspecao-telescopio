@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Inspeção de Telescópio</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue-dark:#042C53;--blue-mid:#185FA5;--blue-light:#85B7EB;--blue-bg:#E6F1FB;
+  --green-bg:#EAF3DE;--green-border:#639922;--green-text:#27500A;
+  --red-bg:#FCEBEB;--red-border:#A32D2D;--red-text:#501313;
+  --amber-bg:#FAEEDA;--amber-border:#854F0B;--amber-text:#412402;
+  --bg:#F4F4F2;--surface:#FFFFFF;--border:#D3D1C7;--text:#2C2C2A;--muted:#5F5E5A;
+}
+body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);min-height:100vh;padding-bottom:90px}
+.topbar{background:var(--blue-dark);padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.topbar-icon{width:34px;height:34px;border-radius:7px;background:rgba(133,183,235,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.topbar-icon svg{width:20px;height:20px;fill:var(--blue-light)}
+.topbar h1{font-size:14px;font-weight:600;color:#fff;line-height:1.2}
+.topbar p{font-size:11px;color:var(--blue-light);margin-top:1px}
+.progress-bar{height:3px;background:rgba(133,183,235,.2);position:sticky;top:62px;z-index:9}
+.progress-fill{height:100%;background:var(--blue-light);transition:width .35s ease;width:0%}
+.body{padding:14px;max-width:480px;margin:0 auto}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.card-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-num{width:18px;height:18px;border-radius:5px;background:var(--blue-dark);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--blue-light);font-weight:800;flex-shrink:0}
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:4px;margin-bottom:5px}
+.req{width:5px;height:5px;border-radius:50%;background:#E24B4A;display:inline-block;flex-shrink:0}
+.field input,.field select,.field textarea{
+  font-size:15px;color:var(--text);background:#F8F8F6;
+  border:1px solid var(--border);border-radius:10px;
+  padding:11px 13px;width:100%;outline:none;
+  transition:all .15s;-webkit-appearance:none;appearance:none
+}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235F5E5A' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue-mid);background:#fff;box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.field textarea{resize:none;line-height:1.5;min-height:80px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mega-wrap{display:flex;gap:8px}
+.mega-wrap input{flex:1;min-width:0}
+.unit-toggle{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-shrink:0}
+.unit-btn{padding:0 14px;background:#F8F8F6;border:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s}
+.unit-btn.active{background:var(--blue-dark);color:var(--blue-light)}
+.unit-hint{font-size:11px;color:var(--muted);margin-top:5px}
+.toggle-row{display:flex;align-items:center;gap:12px;background:#F8F8F6;border:1px solid var(--border);border-radius:10px;padding:13px}
+.toggle-info{flex:1}
+.toggle-label{font-size:14px;color:var(--text);font-weight:500}
+.toggle-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.sw{position:relative;width:44px;height:26px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw-track{position:absolute;cursor:pointer;inset:0;background:#B4B2A9;border-radius:13px;transition:.2s}
+.sw-track:before{content:'';position:absolute;width:20px;height:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw input:checked+.sw-track{background:#1D9E75}
+.sw input:checked+.sw-track:before{transform:translateX(18px)}
+.photo-zone{border:1.5px dashed var(--border);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;background:#F8F8F6;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.photo-zone:active{background:#fff;border-color:var(--blue-mid)}
+.photo-icon{font-size:32px;margin-bottom:8px}
+.photo-zone p{font-size:13px;color:var(--muted);line-height:1.4}
+.photo-zone small{font-size:11px;color:var(--muted);opacity:.7}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumb{width:72px;height:72px;border-radius:10px;object-fit:cover;border:1px solid var(--border)}
+.parecer-grid{display:flex;flex-direction:column;gap:8px}
+.parecer-btn{
+  padding:13px 14px;border:1px solid var(--border);border-radius:10px;
+  background:#F8F8F6;cursor:pointer;font-size:14px;font-weight:500;
+  color:var(--muted);text-align:left;transition:all .15s;
+  display:flex;align-items:center;gap:10px;width:100%;
+  -webkit-tap-highlight-color:transparent
+}
+.pb-dot{width:11px;height:11px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .15s}
+.parecer-btn.active-lib{background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)}
+.parecer-btn.active-lib .pb-dot{background:var(--green-border)}
+.parecer-btn.active-blk{background:var(--red-bg);border-color:var(--red-border);color:var(--red-text)}
+.parecer-btn.active-blk .pb-dot{background:var(--red-border)}
+.parecer-btn.active-obs{background:var(--amber-bg);border-color:var(--amber-border);color:var(--amber-text)}
+.parecer-btn.active-obs .pb-dot{background:var(--amber-border)}
+.footer{position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px}
+.btn-cancel{padding:13px 18px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:14px;cursor:pointer;font-weight:500}
+.btn-send{flex:1;padding:13px;background:var(--blue-dark);border:none;border-radius:10px;color:var(--blue-light);font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-send:disabled{opacity:.35;cursor:not-allowed}
+.btn-send:not(:disabled):active{opacity:.8}
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#27500A;color:#C0DD97;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:600;display:none;z-index:100;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-icon">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+  </div>
+  <div>
+    <h1>Inspeção de Telescópio</h1>
+    <p>Manutenção Preventiva · Megagem e Isolamento</p>
+  </div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+
+<div class="body">
+
+  <!-- CARD 1 -->
+  <div class="card">
+    <div class="card-title"><span class="card-num">1</span>Identificação</div>
+    <div class="row2">
+      <div class="field">
+        <label><span class="req"></span>ID Equipamento</label>
+        <select id="f-equip" onchange="upd()">
+          <option value="">Selecionar</option>
+          <option>1173</option><option>1272</option>
+          <option>1372</option><option>1473</option>
+        </select>
+      </div>
+      <div class="field">
+        <label><span class="req"></span>Telescópio</label>
+        <select id="f-tele" onchange="upd()">
+          <option value="">Selecionar</option>
+          <option>T-01</option><option>T-02</option><option>T-03</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label><span class="req"></span>Responsável técnico</label>
+      <input type="text" id="f-resp" placeholder="Nome completo" oninput="upd()">
+    </div>
+    <div class="field">
+      <label><span class="req"></span>Data e hora da inspeção</label>
+      <input type="datetime-local" id="f-data" onchange="upd()">
+    </div>
+  </div>
+
+  <!-- CARD 2 -->
+  <div class="card">
+    <div class="card-title"><span class="card-num">2</span>Medição de Megagem</div>
+    <div class="field">
+      <label><span class="req"></span>Valor lido</label>
+      <div class="mega-wrap">
+        <input type="number" id="f-mega" placeholder="ex: 250" min="0" step="0.01" oninput="upd()">
+        <div class="unit-toggle">
+          <button class="unit-btn active" id="u-mo" onclick="setUnit('MΩ')">MΩ</button>
+          <button class="unit-btn" id="u-go" onclick="setUnit('GΩ')">GΩ</button>
+        </div>
+      </div>
+      <div class="unit-hint" id="u-hint">Megaohm (MΩ)</div>
+    </div>
+    <div class="field">
+      <label>Tensão aplicada</label>
+      <select id="f-tensao">
+        <option value="">Selecionar</option>
+        <option>500V</option><option>1000V</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- CARD 3 -->
+  <div class="card">
+    <div class="card-title"><span class="card-num">3</span>Estado dos Isoladores</div>
+    <div class="field">
+      <label><span class="req"></span>Condição visual</label>
+      <select id="f-isol" onchange="upd()">
+        <option value="">Selecionar</option>
+        <option>Íntegro</option>
+        <option>Com trincas</option>
+        <option>Sujo (limpeza necessária)</option>
+      </select>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="toggle-label">Limpeza realizada?</div>
+        <div class="toggle-sub">Remoção de resíduos nos isoladores</div>
+      </div>
+      <label class="sw"><input type="checkbox" id="f-limp"><span class="sw-track"></span></label>
+    </div>
+  </div>
+
+  <!-- CARD 4 -->
+  <div class="card">
+    <div class="card-title"><span class="card-num">4</span>Evidência Fotográfica <span class="req" style="margin-left:4px"></span></div>
+    <div class="photo-zone" onclick="document.getElementById('f-foto').click()">
+      <div class="photo-icon">📷</div>
+      <p>Toque para fotografar ou selecionar</p>
+      <small>Megômetro · Isoladores · Vista geral</small>
+      <input type="file" id="f-foto" accept="image/*" multiple style="display:none" onchange="addFotos(event)">
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+
+  <!-- CARD 5 -->
+  <div class="card">
+    <div class="card-title"><span class="card-num">5</span>Parecer Técnico <span class="req" style="margin-left:4px"></span></div>
+    <div class="parecer-grid">
+      <button class="parecer-btn" id="p-lib" onclick="setParecer('lib')">
+        <span class="pb-dot"></span>Liberado para operação
+      </button>
+      <button class="parecer-btn" id="p-blk" onclick="setParecer('blk')">
+        <span class="pb-dot"></span>Bloqueado
+      </button>
+      <button class="parecer-btn" id="p-obs" onclick="setParecer('obs')">
+        <span class="pb-dot"></span>Observação
+      </button>
+    </div>
+  </div>
+
+  <!-- CARD 6 -->
+  <div class="card">
+    <div class="card-title"><span class="card-num">6</span>Observações Adicionais</div>
+    <div class="field">
+      <textarea id="f-obs" placeholder="Registre observações adicionais relevantes para a inspeção..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <button class="btn-cancel" onclick="limpar()">Limpar</button>
+  <button class="btn-send" id="btn-send" disabled onclick="enviar()">Registrar Inspeção</button>
+</div>
+
+<div class="toast" id="toast">✓ Registro enviado com sucesso!</div>
+
+<script>
+  let parecer='', unit='MΩ';
+  const obrig=['f-equip','f-tele','f-resp','f-data','f-mega','f-isol'];
+  document.getElementById('f-data').value=new Date().toISOString().slice(0,16);
+
+  function upd(){
+    let ok=0;
+    obrig.forEach(id=>{if(document.getElementById(id).value.trim())ok++;});
+    if(document.getElementById('thumbs').children.length>0)ok++;
+    if(parecer)ok++;
+    const total=8, pct=Math.round(ok/total*100);
+    document.getElementById('prog').style.width=pct+'%';
+    document.getElementById('btn-send').disabled=(ok<total);
+  }
+
+  function setUnit(u){
+    unit=u;
+    document.getElementById('u-mo').className='unit-btn'+(u==='MΩ'?' active':'');
+    document.getElementById('u-go').className='unit-btn'+(u==='GΩ'?' active':'');
+    document.getElementById('u-hint').textContent=u==='MΩ'?'Megaohm (MΩ)':'Gigaohm (GΩ)';
+  }
+
+  function setParecer(t){
+    parecer=t;
+    ['lib','blk','obs'].forEach(x=>document.getElementById('p-'+x).className='parecer-btn');
+    const cls={lib:'active-lib',blk:'active-blk',obs:'active-obs'};
+    document.getElementById('p-'+t).classList.add(cls[t]);
+    upd();
+  }
+
+  function addFotos(e){
+    const c=document.getElementById('thumbs');
+    Array.from(e.target.files).forEach(f=>{
+      if(c.children.length>=6)return;
+      const img=document.createElement('img');
+      img.className='thumb';img.src=URL.createObjectURL(f);c.appendChild(img);
+    });
+    upd();
+  }
+
+  function limpar(){
+    obrig.forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-data').value=new Date().toISOString().slice(0,16);
+    document.getElementById('f-tensao').value='';
+    document.getElementById('f-limp').checked=false;
+    document.getElementById('f-obs').value='';
+    document.getElementById('f-foto').value='';
+    document.getElementById('thumbs').innerHTML='';
+    parecer='';unit='MΩ';
+    ['lib','blk','obs'].forEach(x=>document.getElementById('p-'+x).className='parecer-btn');
+    document.getElementById('u-mo').className='unit-btn active';
+    document.getElementById('u-go').className='unit-btn';
+    document.getElementById('u-hint').textContent='Megaohm (MΩ)';
+    upd();
+  }
+
+  async function fileToBase64(file){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const base64=reader.result.split(',')[1];
+        resolve({data:base64,type:file.type,name:file.name});
+      };
+      reader.onerror=reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function enviar(){
+    const btn=document.getElementById('btn-send');
+    btn.disabled=true;
+    btn.textContent='Enviando...';
+
+    // Converter fotos para base64
+    const fotoInput=document.getElementById('f-foto');
+    const fotos=[];
+    for(const file of fotoInput.files){
+      const b64=await fileToBase64(file);
+      fotos.push(b64);
+    }
+
+    const payload={
+      equipamento: document.getElementById('f-equip').value,
+      telescopio: document.getElementById('f-tele').value,
+      responsavel: document.getElementById('f-resp').value,
+      dataInspecao: document.getElementById('f-data').value,
+      megagem: parseFloat(document.getElementById('f-mega').value),
+      unidade: unit,
+      tensao: document.getElementById('f-tensao').value,
+      isoladores: document.getElementById('f-isol').value,
+      limpeza: document.getElementById('f-limp').checked,
+      parecer: parecer==='lib'?'Liberado':parecer==='blk'?'Bloqueado':'Observacao',
+      observacoes: document.getElementById('f-obs').value,
+      fotos: fotos
+    };
+
+    try {
+      await fetch('https://script.google.com/macros/s/AKfycby-bAF3nQQSEgpCoRA_5mXOx-CJ_seYZsfYgNHXaf0-RnSSGTieQVfcYqK3jr2XC-Wk/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+    } catch(e){}
+
+    const t=document.getElementById('toast');
+    t.style.display='block';
+    btn.textContent='Registrar Inspeção';
+    setTimeout(()=>{t.style.display='none';limpar();},3000);
+  }
+
+  upd();
+</script>
+</body>
+</html>
